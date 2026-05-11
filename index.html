@@ -429,6 +429,89 @@
         .dock-e { font-size: 36px; }
 
         /* ═══════════════════════════════════════
+           EASTER EGG
+           ═══════════════════════════════════════ */
+        #easter-egg {
+            position: absolute;
+            inset: 0;
+            background: #000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 500;
+            padding: max(44px, env(safe-area-inset-top)) 24px max(28px, env(safe-area-inset-bottom));
+            cursor: pointer;
+        }
+        #easter-egg.on { display: flex; animation: fadeIn 0.5s ease; }
+
+        #ee-title {
+            font-size: 56px;
+            font-weight: 200;
+            color: #fff;
+            letter-spacing: 10px;
+            text-transform: uppercase;
+            text-align: center;
+            text-shadow: 0 0 40px rgba(255,255,255,0.25);
+        }
+
+        #ee-classroom {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
+        }
+        #ee-board {
+            width: 230px;
+            height: 96px;
+            background: #1a5c2a;
+            border: 6px solid #7a5530;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 24px rgba(0,0,0,0.45), 0 6px 18px rgba(0,0,0,0.6);
+        }
+        #ee-chalk {
+            font-size: 20px;
+            color: rgba(255,255,255,0.82);
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+        #ee-teacher {
+            font-size: 58px;
+            line-height: 1;
+            margin-top: -2px;
+        }
+        #ee-rows {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-top: 18px;
+        }
+        .ee-row {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            font-size: 36px;
+            line-height: 1;
+        }
+        .ee-row span {
+            display: inline-block;
+            animation: popIn 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
+        @keyframes popIn {
+            from { opacity:0; transform: scale(0.3); }
+            to   { opacity:1; transform: scale(1); }
+        }
+        #ee-footer {
+            font-size: 12px;
+            color: rgba(255,255,255,0.28);
+            text-align: center;
+            letter-spacing: 0.3px;
+        }
+
+        /* ═══════════════════════════════════════
            GAME OVER SCREEN
            ═══════════════════════════════════════ */
         #gameover-screen {
@@ -514,6 +597,27 @@
 
     <!-- Fullscreen button (desktop) -->
     <button id="fs-btn" title="Celá obrazovka" onclick="toggleFS()">⛶</button>
+
+    <!-- ════ EASTER EGG ════ -->
+    <div id="easter-egg">
+        <div id="ee-title">Eduard</div>
+        <div id="ee-classroom">
+            <div id="ee-board"><span id="ee-chalk">Dobrý den! ✏️</span></div>
+            <div id="ee-teacher">👩‍🏫</div>
+            <div id="ee-rows">
+                <div class="ee-row">
+                    <span style="animation-delay:.30s">👧</span><span style="animation-delay:.35s">👦</span><span style="animation-delay:.40s">👧</span><span style="animation-delay:.45s">👦</span><span style="animation-delay:.50s">👧</span>
+                </div>
+                <div class="ee-row">
+                    <span style="animation-delay:.55s">👦</span><span style="animation-delay:.60s">👧</span><span style="animation-delay:.65s">👦</span><span style="animation-delay:.70s">👧</span><span style="animation-delay:.75s">👦</span>
+                </div>
+                <div class="ee-row">
+                    <span style="animation-delay:.80s">👧</span><span style="animation-delay:.85s">👦</span><span style="animation-delay:.90s">👧</span><span style="animation-delay:.95s">👦</span><span style="animation-delay:1.0s">👧</span>
+                </div>
+            </div>
+        </div>
+        <div id="ee-footer">vytvořila Terezka s tátou</div>
+    </div>
 
     <!-- ════ GAME OVER SCREEN ════ -->
     <div id="gameover-screen">
@@ -881,7 +985,7 @@ function press(digit) {
 
     if (entered.length === s.w.length) {
         busy = true;
-        setTimeout(check, 220);
+        setTimeout(() => entered.join('') === '000008' ? showEasterEgg() : check(), 220);
     } else {
         $(`ch${entered.length}`).classList.add('active');
     }
@@ -1038,6 +1142,22 @@ document.addEventListener('keydown', e => {
     if (e.key >= '0' && e.key <= '9') press(parseInt(e.key));
     if (e.key === 'Backspace') del();
 });
+
+// ═══════════════════════════════════════
+// EASTER EGG
+// ═══════════════════════════════════════
+function showEasterEgg() {
+    playUnlock();
+    $('easter-egg').classList.add('on');
+    $('easter-egg').addEventListener('pointerdown', hideEasterEgg, { once: true });
+    document.addEventListener('keydown', hideEasterEgg, { once: true });
+}
+function hideEasterEgg() {
+    playLock();
+    $('easter-egg').classList.remove('on');
+    // Reset current sentence so player can try again
+    loadSentence();
+}
 
 // ═══════════════════════════════════════
 // FULLSCREEN
