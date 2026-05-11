@@ -931,7 +931,7 @@ function check() {
         } else {
             chip.classList.add('wrong');
             badge.textContent = `${entered[i]}→${type}`;
-            badge.className = 'word-type-badge err';
+            badge.className = `word-type-badge on c${type}`;
             ok = false;
         }
     });
