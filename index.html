@@ -9,6 +9,8 @@
     <meta name="theme-color" content="#000000">
     <meta name="color-scheme" content="dark">
     <link rel="manifest" href="manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap" rel="stylesheet">
     <title>Slovní druhy</title>
     <style>
         * {
@@ -467,17 +469,16 @@
             flex-direction: column;
             align-items: center;
             gap: 4px;
-            font-family: 'Courier New', monospace;
+            font-family: 'Caveat', 'Segoe Script', 'Brush Script MT', cursive;
             color: rgba(255,255,255,0.85);
         }
         #ee-chalk-title {
-            font-size: 26px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
+            font-size: 28px;
+            letter-spacing: 2px;
         }
         #ee-chalk-sub {
-            font-size: 14px;
-            letter-spacing: 2px;
+            font-size: 16px;
+            letter-spacing: 1px;
             color: rgba(255,255,255,0.65);
         }
         #ee-teacher {
@@ -1143,20 +1144,9 @@ document.addEventListener('keydown', e => {
 // EASTER EGG
 // ═══════════════════════════════════════
 function showEasterEgg() {
-    // Hair pools: brown, black, light-brown, blonde
-    const hair = [
-        ['👧', '👦'],          // hnědé
-        ['👩‍🦱', '👨‍🦱'],  // černé (kudrnaté / tmavé)
-        ['🧒', '🧒‍♂️'],      // světle hnědé
-        ['👱‍♀️', '👱‍♂️'],  // blond
-    ];
-    // Ensure at least 3 kids from each group, fill rest randomly
-    const pick = pool => pool[Math.floor(Math.random() * pool.length)];
-    const kids = [];
-    hair.forEach(pool => { kids.push(pick(pool)); kids.push(pick(pool)); kids.push(pick(pool)); });
-    const all = hair.flat();
-    while (kids.length < 15) kids.push(pick(all));
-    kids.sort(() => Math.random() - 0.5);
+    // Žluté postavičky, náhodné pohlaví 50:50
+    const kids = Array.from({ length: 15 }, () => Math.random() < 0.5 ? '👧' : '👦');
+
 
     const rows = $('ee-rows');
     rows.innerHTML = '';
