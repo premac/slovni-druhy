@@ -711,6 +711,40 @@ function playKeyClick() {
     osc.stop(ctx.currentTime + 0.025);
 }
 
+function playSqueak() {
+    const ctx = audioCtx();
+    // Sawtooth sweep up-then-down like a squeaky floorboard / door hinge
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sawtooth';
+    const t = ctx.currentTime;
+    osc.frequency.setValueAtTime(280, t);
+    osc.frequency.exponentialRampToValueAtTime(980, t + 0.07);
+    osc.frequency.exponentialRampToValueAtTime(380, t + 0.16);
+    gain.gain.setValueAtTime(0, t);
+    gain.gain.linearRampToValueAtTime(0.14, t + 0.015);
+    gain.gain.setValueAtTime(0.14, t + 0.10);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.20);
+    osc.start(t); osc.stop(t + 0.22);
+}
+
+let _clickCount = 0;
+let _nextSqueak = 40 + Math.floor(Math.random() * 22); // first squeak ~40-62
+
+function soundAndHaptic(isDelete) {
+    _clickCount++;
+    if (_clickCount >= _nextSqueak) {
+        _clickCount = 0;
+        _nextSqueak = 40 + Math.floor(Math.random() * 22);
+        playSqueak();
+        haptic(25);
+    } else {
+        playKeyClick();
+        haptic(isDelete ? 6 : 8);
+    }
+}
+
 function haptic(ms) {
     if (navigator.vibrate) navigator.vibrate(ms || 8);
 }
@@ -829,8 +863,7 @@ function press(digit) {
     if (busy) return;
     const s = deck[curIdx];
     if (entered.length >= s.w.length) return;
-    haptic(8);
-    playKeyClick();
+    soundAndHaptic(false);
 
     const pos = entered.length;
     entered.push(digit);
@@ -855,8 +888,7 @@ function press(digit) {
 
 function del() {
     if (busy || entered.length === 0) return;
-    haptic(6);
-    playKeyClick();
+    soundAndHaptic(true);
     const pos = entered.length - 1;
     entered.pop();
 
