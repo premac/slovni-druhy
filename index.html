@@ -170,7 +170,9 @@
             transition: opacity 0.2s;
             letter-spacing: 0.2px;
         }
-        .word-type-badge.on { opacity: 1; }
+        .word-type-badge.on  { opacity: 1; }
+        .word-type-badge.dim { opacity: 1; color: rgba(255,255,255,0.28); }
+        .word-type-badge.err { opacity: 1; color: #ff453a; }
 
         /* PIN dots */
         #pin-row {
@@ -925,10 +927,11 @@ function check() {
         const badge = $(`bd${i}`);
         if (entered[i] === type) {
             chip.classList.add('correct');
+            badge.className = 'word-type-badge dim';
         } else {
             chip.classList.add('wrong');
             badge.textContent = `${entered[i]}→${type}`;
-            badge.className = `word-type-badge on c${type}`;
+            badge.className = 'word-type-badge err';
             ok = false;
         }
     });
