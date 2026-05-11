@@ -729,20 +729,18 @@ function playSqueak() {
     osc.start(t); osc.stop(t + 0.22);
 }
 
-let _clickCount = 0;
-let _nextSqueak = 40 + Math.floor(Math.random() * 22); // first squeak ~40-62
-
-function soundAndHaptic(isDelete) {
-    _clickCount++;
-    if (_clickCount >= _nextSqueak) {
-        _clickCount = 0;
-        _nextSqueak = 40 + Math.floor(Math.random() * 22);
-        playSqueak();
-        haptic(25);
-    } else {
-        playKeyClick();
-        haptic(isDelete ? 6 : 8);
-    }
+function playDeleteClick() {
+    const ctx = audioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'square';
+    const t = ctx.currentTime;
+    osc.frequency.setValueAtTime(320, t);
+    osc.frequency.exponentialRampToValueAtTime(160, t + 0.04);
+    gain.gain.setValueAtTime(0.22, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.05);
+    osc.start(t); osc.stop(t + 0.06);
 }
 
 function haptic(ms) {
@@ -863,7 +861,7 @@ function press(digit) {
     if (busy) return;
     const s = deck[curIdx];
     if (entered.length >= s.w.length) return;
-    soundAndHaptic(false);
+    playKeyClick(); haptic(8);
 
     const pos = entered.length;
     entered.push(digit);
@@ -888,7 +886,7 @@ function press(digit) {
 
 function del() {
     if (busy || entered.length === 0) return;
-    soundAndHaptic(true);
+    playDeleteClick(); haptic(14);
     const pos = entered.length - 1;
     entered.pop();
 
@@ -940,6 +938,7 @@ function check() {
         updateBattery();
         setTimeout(() => showSuccess(s), 350);
     } else {
+        playSqueak(); haptic(40);
         // Show correct answer for up to 30s or until user taps
         const doAdvance = () => {
             clearWrongTimeout();
