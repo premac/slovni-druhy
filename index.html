@@ -871,7 +871,7 @@ function press(digit) {
     chip.classList.add('entered');
 
     const badge = $(`bd${pos}`);
-    badge.textContent = `${digit === 0 ? '0' : digit} · ${TYPE_SHORT[digit]}`;
+    badge.textContent = TYPE_SHORT[digit];
     badge.className = `word-type-badge on c${digit}`;
 
     $(`pd${pos}`).classList.add('on');
