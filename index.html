@@ -858,6 +858,7 @@ function loadSentence() {
 // INPUT
 // ═══════════════════════════════════════
 function press(digit) {
+    ensureFullscreen();
     if (busy) return;
     const s = deck[curIdx];
     if (entered.length >= s.w.length) return;
@@ -1038,6 +1039,13 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════
 // FULLSCREEN
 // ═══════════════════════════════════════
+let _fsTriggered = false;
+function ensureFullscreen() {
+    if (_fsTriggered || document.fullscreenElement || window.innerWidth <= 480) return;
+    _fsTriggered = true;
+    document.documentElement.requestFullscreen().catch(() => { _fsTriggered = false; });
+}
+
 function toggleFS() {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(() => {});
@@ -1048,14 +1056,8 @@ function toggleFS() {
 document.addEventListener('fullscreenchange', () => {
     const btn = $('fs-btn');
     if (btn) btn.style.display = document.fullscreenElement ? 'none' : '';
+    if (document.fullscreenElement) _fsTriggered = true;
 });
-// Auto-request fullscreen on first interaction (desktop only)
-document.addEventListener('pointerdown', function autoFS() {
-    if (!document.fullscreenElement && window.innerWidth > 480) {
-        document.documentElement.requestFullscreen().catch(() => {});
-    }
-    document.removeEventListener('pointerdown', autoFS);
-}, { once: true });
 
 // ═══════════════════════════════════════
 // BOOT
