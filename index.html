@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Slovní druhy</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+        }
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        /* ── Phone wrapper ─────────────────── */
+        #phone {
+            width: min(100vw, 393px);
+            height: min(100vh, 852px);
+            background: #000;
+            position: relative;
+            overflow: hidden;
+            border-radius: 54px;
+            border: 1px solid rgba(255,255,255,0.18);
+            box-shadow:
+                0 0 0 3px rgba(255,255,255,0.06),
+                0 40px 100px rgba(0,0,0,0.85),
+                inset 0 0 0 1px rgba(0,0,0,0.6);
+        }
+
+        /* ── Shared: status bar ─────────────── */
+        .status-bar {
+            width: 100%;
+            padding: 14px 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+        .status-icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+
+        /* Battery score indicator */
+        #battery-wrap {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        #battery-pct {
+            font-size: 11px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            min-width: 26px;
+            text-align: right;
+        }
+        #battery-outer {
+            width: 36px;
+            height: 17px;
+            border: 1.5px solid rgba(255,255,255,0.7);
+            border-radius: 4px;
+            padding: 2px;
+            position: relative;
+        }
+        #battery-nub {
+            width: 3px;
+            height: 7px;
+            background: rgba(255,255,255,0.6);
+            border-radius: 0 2px 2px 0;
+            margin-left: 1px;
+        }
+        #battery-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: #30d158;
+            width: 0%;
+            transition: width 0.5s cubic-bezier(0.34,1.56,0.64,1), background 0.4s;
+        }
+
+        /* ═══════════════════════════════════════
+           GAME SCREEN
+           ═══════════════════════════════════════ */
+        #game-screen {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: linear-gradient(180deg, #1c1c1e 0%, #000 100%);
+        }
+
+        /* Sentence area */
+        #sentence-area {
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 14px 4px;
+            gap: 12px;
+            min-height: 0;
+        }
+        #task-label {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+        }
+        #words-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px 10px;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .word-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+        .word-chip {
+            font-size: 20px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.28);
+            transition: color 0.2s ease, font-size 0.22s cubic-bezier(0.34,1.56,0.64,1);
+            line-height: 1.3;
+            padding: 0 1px;
+        }
+        .word-chip.active {
+            color: #fff;
+            font-size: 26px;
+        }
+        .word-chip.entered {
+            color: #fff;
+        }
+        .word-chip.correct {
+            color: #30d158;
+        }
+        .word-chip.wrong {
+            color: #ff453a;
+        }
+        .word-type-badge {
+            font-size: 9.5px;
+            font-weight: 700;
+            height: 13px;
+            display: flex;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            letter-spacing: 0.2px;
+        }
+        .word-type-badge.on { opacity: 1; }
+
+        /* PIN dots */
+        #pin-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin: 2px 0;
+        }
+        .pin-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            background: transparent;
+            transition: all 0.15s;
+        }
+        .pin-dot.on { background: #fff; border-color: #fff; }
+
+        /* Numpad */
+        #numpad-area {
+            width: 100%;
+            padding: 4px 22px 30px;
+            flex-shrink: 0;
+        }
+        #numpad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            max-width: 330px;
+            margin: 0 auto;
+        }
+        .key-btn {
+            aspect-ratio: 1;
+            max-height: 76px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.11);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            font-family: inherit;
+            transition: background 0.08s;
+        }
+        .key-btn:active { background: rgba(255,255,255,0.28); }
+        .key-btn.ghost { background: transparent; pointer-events: none; }
+        .key-btn.del  { background: transparent; font-size: 22px; }
+        .key-btn.del:active { background: rgba(255,255,255,0.12); }
+        .key-digit { font-size: 28px; font-weight: 300; line-height: 1.1; }
+        .key-label {
+            font-size: 7px;
+            color: rgba(255,255,255,0.42);
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            text-align: center;
+            max-width: 62px;
+            line-height: 1.1;
+        }
+
+        /* Score corner removed — battery in status bar is used instead */
+
+        /* Type colors */
+        .c0 { color: #8E8E93; } .c1 { color: #5AC8FA; } .c2 { color: #4CD964; }
+        .c3 { color: #AF52DE; } .c4 { color: #FF9500; } .c5 { color: #FF3B30; }
+        .c6 { color: #34AADC; } .c7 { color: #FF2D55; } .c8 { color: #FFCC00; }
+        .c9 { color: #007AFF; }
+
+        /* ═══════════════════════════════════════
+           SUCCESS SCREEN (fake iPhone home)
+           ═══════════════════════════════════════ */
+        #success-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            z-index: 100;
+        }
+        #success-screen.on { display: flex; animation: fadeIn 0.35s ease; }
+        @keyframes fadeIn { from { opacity:0; transform: scale(1.03); } to { opacity:1; transform: scale(1); } }
+
+        #success-bg {
+            position: absolute;
+            inset: 0;
+        }
+        .bg-glow {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 220px;
+            opacity: 0.10;
+            line-height: 1;
+            z-index: 0;
+        }
+        #success-inner {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+        #s-status {
+            padding: 14px 24px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+        }
+        #s-time {
+            font-size: 88px;
+            font-weight: 100;
+            color: #fff;
+            text-align: center;
+            letter-spacing: -4px;
+            line-height: 1;
+            margin-top: 6px;
+        }
+        #s-date {
+            font-size: 18px;
+            color: rgba(255,255,255,0.8);
+            text-align: center;
+            margin-top: 2px;
+        }
+        #s-badge {
+            margin: 14px auto 0;
+            background: rgba(48,209,88,0.22);
+            border: 1.5px solid #30d158;
+            color: #30d158;
+            font-size: 13px;
+            font-weight: 700;
+            padding: 7px 22px;
+            border-radius: 20px;
+            letter-spacing: 0.8px;
+            display: inline-block;
+        }
+        #s-tap-hint {
+            text-align: center;
+            color: rgba(255,255,255,0.45);
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            animation: pulse 1.8s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%,100% { opacity: 0.35; }
+            50%      { opacity: 0.75; }
+        }
+        #s-swipe-bar {
+            width: 134px;
+            height: 5px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.35);
+            margin: 6px auto 20px;
+        }
+        .flex1 { flex: 1; }
+        #app-grid {
+            padding: 0 22px 14px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        .app-icon { display: flex; flex-direction: column; align-items: center; gap: 5px; }
+        .app-bubble {
+            width: 58px;
+            height: 58px;
+            border-radius: 13px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+            background: rgba(255,255,255,0.13);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .app-name { font-size: 10px; color: rgba(255,255,255,0.78); text-align: center; }
+        #s-dock {
+            margin: 0 14px 28px;
+            background: rgba(255,255,255,0.11);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 11px 24px;
+            display: flex;
+            justify-content: space-around;
+        }
+        .dock-e { font-size: 36px; }
+
+        /* ═══════════════════════════════════════
+           GAME OVER SCREEN
+           ═══════════════════════════════════════ */
+        #gameover-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(180deg, #1c1c1e 0%, #000 100%);
+            z-index: 200;
+        }
+        #gameover-screen.on { display: flex; animation: fadeIn 0.4s ease; }
+        #go-emoji { font-size: 72px; margin-bottom: 20px; }
+        .pct-row { display: flex; align-items: flex-end; gap: 4px; }
+        #pct-num { font-size: 100px; font-weight: 200; color: #fff; line-height: 1; }
+        #pct-sign { font-size: 44px; font-weight: 200; color: rgba(255,255,255,0.55); padding-bottom: 8px; }
+        #go-label { font-size: 18px; color: rgba(255,255,255,0.45); margin-top: 6px; margin-bottom: 28px; }
+        #go-stats { font-size: 16px; color: rgba(255,255,255,0.6); text-align: center; line-height: 1.8; }
+        .hl { color: #30d158; font-weight: 700; }
+        #play-again {
+            margin-top: 44px;
+            padding: 15px 52px;
+            background: #007AFF;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        #play-again:active { background: #0060cc; transform: scale(0.97); }
+    </style>
+</head>
+<body>
+<div id="phone">
+
+    <!-- ════ GAME SCREEN ════ -->
+    <div id="game-screen">
+        <div class="status-bar">
+            <span id="g-clock">9:41</span>
+            <div id="battery-wrap">
+                <span id="battery-pct">0%</span>
+                <div id="battery-outer"><div id="battery-fill"></div></div>
+                <div id="battery-nub"></div>
+            </div>
+        </div>
+        <div id="sentence-area">
+            <div id="task-label">Urči slovní druh každého slova</div>
+            <div id="words-container"></div>
+            <div id="pin-row"></div>
+        </div>
+        <div id="numpad-area">
+            <div id="numpad-grid"></div>
+        </div>
+    </div>
+
+    <!-- ════ SUCCESS SCREEN ════ -->
+    <div id="success-screen">
+        <div id="success-bg"></div>
+        <div class="bg-glow" id="bg-glow"></div>
+        <div id="success-inner">
+            <div id="s-status">
+                <span id="ss-clock">9:41</span>
+                <div style="display:flex;gap:6px;font-size:12px"><span>●●●</span><span>🔋</span></div>
+            </div>
+            <div id="s-time">9:41</div>
+            <div id="s-date"></div>
+            <div style="text-align:center"><div id="s-badge">✓ SPRÁVNĚ!</div></div>
+            <div class="flex1"></div>
+            <div id="app-grid"></div>
+            <div id="s-dock">
+                <span class="dock-e">📱</span>
+                <span class="dock-e">📧</span>
+                <span class="dock-e">🗺️</span>
+                <span class="dock-e">📷</span>
+            </div>
+            <div id="s-tap-hint">klepni pro pokračování</div>
+            <div id="s-swipe-bar"></div>
+        </div>
+    </div>
+
+    <!-- ════ GAME OVER SCREEN ════ -->
+    <div id="gameover-screen">
+        <div id="go-emoji"></div>
+        <div class="pct-row">
+            <div id="pct-num">0</div>
+            <div id="pct-sign">%</div>
+        </div>
+        <div id="go-label">úspěšnost</div>
+        <div id="go-stats"></div>
+        <button id="play-again" onclick="startGame()">Hrát znovu</button>
+    </div>
+
+</div>
+<script>
+// ═══════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════
+
+const TYPE_SHORT = {
+    0: "citosl.",  1: "podst.j.", 2: "příd.j.",
+    3: "zájmeno",  4: "čísl.",    5: "sloveso",
+    6: "příslov.", 7: "předl.",   8: "spojka",   9: "částice"
+};
+
+const SENTENCES = [
+    { w:["Zebra","má","černé","a","bílé","pruhy"],         t:[1,5,2,8,2,1],
+      bg:"#1a1040,#2d1b69", e:"🦓", apps:["🦁","🐘","🌍","🦒","🌿","🦅","🐆","🌊"] },
+    { w:["Pes","rychle","běžel","přes","velké","pole"],     t:[1,6,5,7,2,1],
+      bg:"#0d2118,#1a3a2a", e:"🐕", apps:["🌿","🏃","🌳","⛰️","🌻","☀️","🐝","🍃"] },
+    { w:["Malé","dítě","spí","v","teplé","posteli"],        t:[2,1,5,7,2,1],
+      bg:"#1a2744,#0d1b36", e:"👶", apps:["🌙","⭐","🧸","🍼","🌜","💤","🏠","❤️"] },
+    { w:["Červené","auto","jede","po","silnici","rychle"],   t:[2,1,5,7,1,6],
+      bg:"#2a0a0a,#4a1010", e:"🚗", apps:["🛣️","⛽","🚦","🏎️","🗺️","🔧","🚙","🌆"] },
+    { w:["Já","čtu","zajímavou","knihu","každý","den"],     t:[3,5,2,1,3,1],
+      bg:"#2a1a0a,#4a2e10", e:"📚", apps:["📖","☕","🖊️","📝","🌟","🏛️","🔖","🕯️"] },
+    { w:["Slunce","svítí","jasně","na","modré","obloze"],   t:[1,5,6,7,2,1],
+      bg:"#0a1a3a,#1a3a6a", e:"☀️", apps:["⛅","🌤️","🌈","🌊","🏖️","🌴","🐚","🕶️"] },
+    { w:["Tři","malí","chlapci","hráli","fotbal","venku"],  t:[4,2,1,5,1,6],
+      bg:"#0a2a0a,#1a4a1a", e:"⚽", apps:["🏟️","🥅","👟","🏃","🥇","🏅","🎽","🥤"] },
+    { w:["Babička","vaří","chutnou","polévku","pro","nás"], t:[1,5,2,1,7,3],
+      bg:"#2a1a0a,#3a2510", e:"👵", apps:["🥘","🍲","🌿","🧅","🥕","🍳","🫕","❤️"] },
+    { w:["On","vždy","chodí","do","školy","pěšky"],         t:[3,6,5,7,1,6],
+      bg:"#0a1a2a,#102030", e:"🎒", apps:["📐","✏️","📏","📓","🏫","🎯","📌","🖍️"] },
+    { w:["Dva","velcí","medvědi","jedli","sladký","med"],   t:[4,2,1,5,2,1],
+      bg:"#1a1a0a,#2a2a10", e:"🐻", apps:["🍯","🌲","🐝","🌼","🍓","🌿","🏔️","🦌"] },
+    { w:["Ptáci","krásně","zpívají","každé","jarní","ráno"],t:[1,6,5,3,2,1],
+      bg:"#0a1a2a,#102a3a", e:"🐦", apps:["🌅","🌸","🌿","🎵","🌻","☀️","🍃","🦋"] },
+    { w:["Modrý","motýl","letí","nad","kvetoucí","loukou"], t:[2,1,5,7,2,1],
+      bg:"#1a0a2a,#2a1040", e:"🦋", apps:["🌸","🌺","🌼","🌻","🍀","🌷","🌿","🌈"] },
+    { w:["Ona","nikdy","nechodí","sama","do","kina"],        t:[3,6,5,3,7,1],
+      bg:"#0a0a2a,#10102a", e:"🎬", apps:["🎥","🍿","🎭","⭐","🎞️","🎵","🌃","🎟️"] },
+    { w:["Pět","žáků","napsalo","výbornou","domácí","úlohu"],t:[4,1,5,2,2,1],
+      bg:"#0a1a2a,#10203a", e:"✏️", apps:["📝","📚","🎯","⭐","🏆","📐","📏","🖊️"] },
+    { w:["Au","ta","jehla","strašně","bolí","dnes"],         t:[0,3,1,6,5,6],
+      bg:"#2a0a0a,#3a1010", e:"🏥", apps:["💊","🩺","🩹","💉","❤️","🏨","🌡️","🩻"] },
+    { w:["Hele","ten","vlak","přijede","přece","zítra"],     t:[0,3,1,5,9,6],
+      bg:"#0a0a1a,#10101a", e:"🚂", apps:["🛤️","🚉","🎫","⏰","🌃","🚆","🗺️","🔔"] },
+    { w:["Ano","já","to","vím","naprosto","určitě"],         t:[9,3,3,5,6,6],
+      bg:"#0a1a0a,#10201a", e:"💡", apps:["✅","💪","⭐","🎯","🏆","💬","🤝","👍"] },
+    { w:["Starý","muž","pomalu","kráčel","úzkou","uličkou"], t:[2,1,6,5,2,1],
+      bg:"#1a1a10,#2a2a18", e:"👴", apps:["🏘️","🌆","🌇","🛤️","🏠","🕊️","🌳","🌅"] },
+    { w:["Tichý","les","voní","po","dešti","krásně"],        t:[2,1,5,7,1,6],
+      bg:"#0a1a10,#0d2015", e:"🌲", apps:["🍃","🌧️","🌿","🦌","🍄","🌫️","🌱","🌊"] },
+    { w:["Maminka","a","tatínek","čtou","novinky","spolu"],  t:[1,8,1,5,1,6],
+      bg:"#1a1010,#2a1818", e:"👨‍👩‍👧", apps:["📰","☕","🛋️","❤️","🏠","📺","🌻","🤝"] },
+    { w:["Ten","starý","hrad","stojí","na","kopci"],         t:[3,2,1,5,7,1],
+      bg:"#1a1a1a,#282818", e:"🏰", apps:["⚔️","🛡️","👑","🗡️","🏛️","🌄","🗺️","🔮"] },
+    { w:["Děti","vesele","skákaly","přes","švihadlo","dnes"],t:[1,6,5,7,1,6],
+      bg:"#0a1a0a,#102010", e:"🎪", apps:["🎠","🎡","🎢","🎭","🎈","🎉","🤹","🎯"] },
+    { w:["Šest","koček","sedělo","pod","velkým","stromem"],  t:[4,1,5,7,2,1],
+      bg:"#1a0a1a,#200e20", e:"🐱", apps:["🌳","🍂","🌙","⭐","🐾","🌿","🌸","🦋"] },
+    { w:["Ona","zpívá","tak","nádherně","a","přirozeně"],    t:[3,5,6,6,8,6],
+      bg:"#1a0a2a,#200a3a", e:"🎵", apps:["🎤","🎶","🎸","🎹","🎺","🥁","🎻","🎼"] },
+    { w:["Malá","holčička","našla","krásný","červený","kámen"],t:[2,1,5,2,2,1],
+      bg:"#0a1a0a,#102010", e:"💎", apps:["🌿","🔍","✨","💫","🌸","🗺️","🏕️","🌈"] },
+    { w:["Rychlý","jestřáb","krouží","vysoko","nad","lesem"],t:[2,1,5,6,7,1],
+      bg:"#0a1020,#102030", e:"🦅", apps:["⛰️","🌤️","🌊","🏔️","🌿","☁️","🗺️","🌄"] },
+    { w:["Prosím","tě","nepřicházej","tak","pozdě","domů"],  t:[5,3,5,6,6,6],
+      bg:"#1a0a1a,#201020", e:"🏠", apps:["🌙","⭐","🕐","❤️","🚪","🛋️","🌃","💤"] },
+    { w:["Čtyři","studenti","napsali","těžkou","závěrečnou","práci"],t:[4,1,5,2,2,1],
+      bg:"#0a0a1a,#101020", e:"🎓", apps:["📝","📚","🎯","🏆","⭐","💡","📐","🖊️"] },
+    { w:["Ticho","v","lese","bylo","velmi","příjemné"],      t:[1,7,1,5,6,2],
+      bg:"#0a1a10,#10201a", e:"🌿", apps:["🌲","🍃","🌙","✨","🌫️","🦌","🌱","🌊"] },
+    { w:["Hm","co","to","vlastně","tady","děláš"],           t:[0,3,3,9,6,5],
+      bg:"#1a1020,#201828", e:"🤔", apps:["❓","💬","💭","🔍","🧩","💡","🎯","🌀"] },
+    { w:["Sněhobílý","králík","skáče","přes","zelenou","louku"],  t:[2,1,5,7,2,1],
+      bg:"#0a200a,#102510", e:"🐇", apps:["🌿","🌸","🌼","🍀","🌱","🐾","🌳","🌻"] },
+    { w:["Ach","jaká","krásná","letní","noc","dnes"],             t:[0,3,2,2,1,6],
+      bg:"#050520,#0a0a30", e:"🌙", apps:["⭐","🌟","✨","🌛","🦋","🌸","💫","🌙"] },
+    { w:["Každý","student","musí","napsat","krátkou","zprávu"],   t:[3,1,5,5,2,1],
+      bg:"#0a0a20,#10102a", e:"📝", apps:["🎓","📚","✏️","📐","🏫","💡","📌","🖊️"] },
+    { w:["Deset","žáků","dostalo","jedničku","ze","zeměpisu"],    t:[4,1,5,1,7,1],
+      bg:"#0a1a2a,#10202a", e:"🌍", apps:["🗺️","🌐","📍","🧭","🏔️","🌊","🌋","✈️"] },
+    { w:["Ona","tiše","plakala","v","tmavém","pokoji"],           t:[3,6,5,7,2,1],
+      bg:"#100818,#180c20", e:"😢", apps:["🕯️","🌙","💧","🌧️","🛋️","❤️","🎵","🌃"] },
+    { w:["Velký","bílý","kůň","běžel","k","lesu"],               t:[2,2,1,5,7,1],
+      bg:"#1a1a10,#28281a", e:"🐴", apps:["🌾","🏇","🌿","⛰️","🌅","🏕️","🌻","🍃"] },
+    { w:["Náš","starý","pes","zemřel","bohužel","včera"],         t:[3,2,1,5,6,6],
+      bg:"#150a0a,#200d0d", e:"🐕", apps:["❤️","🕯️","🌹","💔","🏠","🌿","🌸","🙏"] },
+    { w:["Ježek","spí","pod","listím","celou","zimu"],            t:[1,5,7,1,3,1],
+      bg:"#0a180a,#102010", e:"🦔", apps:["🍂","🍁","🌲","❄️","🌙","🐿️","🍄","🌿"] },
+    { w:["Neber","tu","věc","bez","mého","svolení"],              t:[5,3,1,7,3,1],
+      bg:"#1a0a0a,#200d0d", e:"🚫", apps:["🔒","⛔","🛡️","⚠️","🙅","💬","📋","✋"] },
+    { w:["Sedm","barevných","rybiček","plave","v","akváriu"],     t:[4,2,1,5,7,1],
+      bg:"#050a2a,#0a1040", e:"🐟", apps:["🐠","🐡","🦈","🌊","🐙","🦑","🐚","🌿"] },
+    { w:["Ten","malý","chlapec","nikdy","nelže","opravdu"],       t:[3,2,1,6,5,6],
+      bg:"#0a1020,#10182a", e:"👦", apps:["🏫","🎒","✏️","📚","⭐","🌟","🤝","❤️"] },
+    { w:["Jé","ten","dort","vypadá","opravdu","skvěle"],          t:[0,3,1,5,6,6],
+      bg:"#2a0a1a,#3a1025", e:"🎂", apps:["🍰","🧁","🎉","🎈","🍫","🎊","🕯️","🥂"] },
+    { w:["Zimní","vítr","fouká","silně","přes","okno"],           t:[2,1,5,6,7,1],
+      bg:"#101830,#182040", e:"🌬️", apps:["❄️","🌨️","⛄","🏔️","🧊","🌫️","🛷","🧣"] },
+    { w:["Starší","sestra","píše","dopis","svému","bratrovi"],    t:[2,1,5,1,3,1],
+      bg:"#1a100a,#251810", e:"💌", apps:["✉️","🖊️","📬","❤️","🌹","🏠","☕","📖"] },
+    { w:["Přesně","ve","dvě","hodiny","přijel","vlak"],           t:[6,7,4,1,5,1],
+      bg:"#0a0a1a,#10101a", e:"🚆", apps:["⏰","🕑","🚉","🎫","🗺️","⏱️","🔔","🌃"] },
+    { w:["Staré","hradby","obklopují","celé","malé","město"],     t:[2,1,5,3,2,1],
+      bg:"#1a1a10,#252515", e:"🏰", apps:["⚔️","🛡️","🗡️","👑","🏛️","🌄","🗺️","🔮"] },
+    { w:["Hluboké","modré","moře","skrývá","velká","tajemství"],  t:[2,2,1,5,2,1],
+      bg:"#051020,#0a1830", e:"🌊", apps:["🐋","🦈","🐙","🌊","🏖️","⚓","🐚","🌿"] },
+    { w:["Naše","škola","stojí","hned","vedle","parku"],          t:[3,1,5,6,7,1],
+      bg:"#0a1a0a,#102010", e:"🏫", apps:["📚","✏️","🎒","🏃","🌳","⛲","🌸","🌿"] },
+    { w:["Dvacet","stromů","bylo","pokáceno","minulý","týden"],   t:[4,1,5,5,2,1],
+      bg:"#1a1208,#25180a", e:"🌳", apps:["🪵","🌲","🔨","😢","🌱","🌿","🍃","🌍"] },
+    { w:["Uf","ten","výstup","byl","velmi","náročný"],            t:[0,3,1,5,6,2],
+      bg:"#0a1a0a,#102010", e:"🧗", apps:["⛰️","🥾","🎒","💪","🏔️","🌄","🧭","🌿"] }
+];
+
+const NUMPAD = [
+    {d:"1",l:TYPE_SHORT[1]},{d:"2",l:TYPE_SHORT[2]},{d:"3",l:TYPE_SHORT[3]},
+    {d:"4",l:TYPE_SHORT[4]},{d:"5",l:TYPE_SHORT[5]},{d:"6",l:TYPE_SHORT[6]},
+    {d:"7",l:TYPE_SHORT[7]},{d:"8",l:TYPE_SHORT[8]},{d:"9",l:TYPE_SHORT[9]},
+    {d:null},{d:"0",l:TYPE_SHORT[0]},{d:"DEL"}
+];
+
+// ═══════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════
+let deck=[], curIdx=0, entered=[], numCorrect=0, numTotal=0, busy=false;
+let wrongTimer=null, wrongTapHandler=null;
+
+// ═══════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════
+let _ctx = null;
+function audioCtx() {
+    if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
+    return _ctx;
+}
+
+function playUnlock() {
+    const ctx = audioCtx();
+    // Two-note ascending chime (iPhone-style)
+    [[880, 0, 0.09], [1318.5, 0.10, 0.18]].forEach(([f, delay, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(f, ctx.currentTime);
+        const t = ctx.currentTime + delay;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.28, t + 0.015);
+        gain.gain.setValueAtTime(0.28, t + dur * 0.55);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.start(t); osc.stop(t + dur + 0.05);
+    });
+}
+
+function playLock() {
+    const ctx = audioCtx();
+    // Short mechanical click (iPhone lock style)
+    [[900, 0,    0.018],
+     [420, 0.01, 0.04 ]].forEach(([f, delay, dur]) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(f, ctx.currentTime);
+        const t = ctx.currentTime + delay;
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+        osc.start(t); osc.stop(t + dur + 0.02);
+    });
+}
+
+// ═══════════════════════════════════════
+// DOM HELPERS
+// ═══════════════════════════════════════
+const $  = id => document.getElementById(id);
+const gs = $("game-screen"), ss = $("success-screen"), go = $("gameover-screen");
+
+// ═══════════════════════════════════════
+// BUILD NUMPAD (once)
+// ═══════════════════════════════════════
+function buildNumpad() {
+    const grid = $("numpad-grid");
+    grid.innerHTML = '';
+    NUMPAD.forEach(key => {
+        const btn = document.createElement('button');
+        if (!key.d) {
+            btn.className = 'key-btn ghost';
+        } else if (key.d === 'DEL') {
+            btn.className = 'key-btn del';
+            btn.textContent = '⌫';
+            btn.addEventListener('pointerdown', e => { e.preventDefault(); del(); });
+        } else {
+            btn.className = 'key-btn';
+            btn.innerHTML = `<span class="key-digit">${key.d}</span><span class="key-label">${key.l}</span>`;
+            const n = parseInt(key.d);
+            btn.addEventListener('pointerdown', e => { e.preventDefault(); press(n); });
+        }
+        grid.appendChild(btn);
+    });
+}
+
+// ═══════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════
+function tick() {
+    const now = new Date();
+    const t = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+    const days=["neděle","pondělí","úterý","středa","čtvrtek","pátek","sobota"];
+    const months=["ledna","února","března","dubna","května","června","července","srpna","září","října","listopadu","prosince"];
+    const dt = `${days[now.getDay()]}, ${now.getDate()}. ${months[now.getMonth()]}`;
+    $("g-clock").textContent = t;
+    $("ss-clock").textContent = t;
+    $("s-time").textContent = t;
+    $("s-date").textContent = dt;
+}
+
+// ═══════════════════════════════════════
+// BATTERY
+// ═══════════════════════════════════════
+function updateBattery() {
+    const pct = Math.min(numCorrect / 20 * 100, 100);
+    $("battery-fill").style.width = pct + '%';
+    $("battery-pct").textContent = Math.round(pct) + '%';
+    const color = pct >= 100 ? '#FFD700'
+                : pct >= 60  ? '#30d158'
+                : pct >= 30  ? '#FF9500'
+                : '#FF453A';
+    $("battery-fill").style.background = color;
+}
+
+// ═══════════════════════════════════════
+// START / LOAD
+// ═══════════════════════════════════════
+function startGame() {
+    deck = [...SENTENCES].sort(() => Math.random() - 0.5);
+    curIdx = 0; numCorrect = 0; numTotal = 0; busy = false;
+    clearWrongTimeout();
+    ss.classList.remove('on');
+    go.classList.remove('on');
+    gs.style.display = 'flex';
+    updateBattery();
+    loadSentence();
+}
+
+function loadSentence() {
+    if (curIdx >= deck.length) { endGame(); return; }
+    entered = [];
+    busy = false;
+    const s = deck[curIdx];
+    const n = s.w.length;
+
+    // words
+    const wc = $("words-container");
+    wc.innerHTML = '';
+    s.w.forEach((word, i) => {
+        const box = document.createElement('div');
+        box.className = 'word-box';
+        const chip = document.createElement('div');
+        chip.id = `ch${i}`;
+        chip.className = 'word-chip' + (i===0?' active':'');
+        chip.textContent = word;
+        const badge = document.createElement('div');
+        badge.id = `bd${i}`;
+        badge.className = 'word-type-badge';
+        box.appendChild(chip); box.appendChild(badge);
+        wc.appendChild(box);
+    });
+
+    // pin dots
+    const pr = $("pin-row");
+    pr.innerHTML = '';
+    for (let i=0;i<n;i++) {
+        const d = document.createElement('div');
+        d.id = `pd${i}`; d.className = 'pin-dot';
+        pr.appendChild(d);
+    }
+}
+
+// ═══════════════════════════════════════
+// INPUT
+// ═══════════════════════════════════════
+function press(digit) {
+    if (busy) return;
+    const s = deck[curIdx];
+    if (entered.length >= s.w.length) return;
+    if (navigator.vibrate) navigator.vibrate(10);
+
+    const pos = entered.length;
+    entered.push(digit);
+
+    const chip = $(`ch${pos}`);
+    chip.classList.remove('active');
+    chip.classList.add('entered');
+
+    const badge = $(`bd${pos}`);
+    badge.textContent = `${digit === 0 ? '0' : digit} · ${TYPE_SHORT[digit]}`;
+    badge.className = `word-type-badge on c${digit}`;
+
+    $(`pd${pos}`).classList.add('on');
+
+    if (entered.length === s.w.length) {
+        busy = true;
+        setTimeout(check, 220);
+    } else {
+        $(`ch${entered.length}`).classList.add('active');
+    }
+}
+
+function del() {
+    if (busy || entered.length === 0) return;
+    const pos = entered.length - 1;
+    entered.pop();
+
+    const next = $(`ch${pos+1}`);
+    if (next) next.classList.remove('active');
+
+    const chip = $(`ch${pos}`);
+    chip.classList.remove('entered');
+    chip.classList.add('active');
+
+    const badge = $(`bd${pos}`);
+    badge.className = 'word-type-badge';
+    badge.textContent = '';
+
+    $(`pd${pos}`).classList.remove('on');
+}
+
+// ═══════════════════════════════════════
+// CHECK
+// ═══════════════════════════════════════
+function clearWrongTimeout() {
+    if (wrongTimer) { clearTimeout(wrongTimer); wrongTimer = null; }
+    if (wrongTapHandler) {
+        gs.removeEventListener('pointerdown', wrongTapHandler);
+        document.removeEventListener('keydown', wrongTapHandler);
+        wrongTapHandler = null;
+    }
+}
+
+function check() {
+    const s = deck[curIdx];
+    let ok = true;
+    s.t.forEach((type, i) => {
+        const chip = $(`ch${i}`);
+        const badge = $(`bd${i}`);
+        if (entered[i] === type) {
+            chip.classList.add('correct');
+        } else {
+            chip.classList.add('wrong');
+            badge.textContent = `${entered[i]}→${type}`;
+            badge.className = `word-type-badge on c${type}`;
+            ok = false;
+        }
+    });
+
+    numTotal++;
+    if (ok) {
+        numCorrect++;
+        updateBattery();
+        setTimeout(() => showSuccess(s), 350);
+    } else {
+        // Show correct answer for up to 30s or until user taps
+        const doAdvance = () => {
+            clearWrongTimeout();
+            advance();
+        };
+        wrongTapHandler = doAdvance;
+        gs.addEventListener('pointerdown', wrongTapHandler, { once: true });
+        document.addEventListener('keydown', wrongTapHandler, { once: true });
+        wrongTimer = setTimeout(doAdvance, 30000);
+    }
+}
+
+// ═══════════════════════════════════════
+// SUCCESS SCREEN
+// ═══════════════════════════════════════
+let successDismissHandler = null;
+
+function dismissSuccess() {
+    if (!successDismissHandler) return;
+    // Clean up listeners
+    ss.removeEventListener('pointerdown', successDismissHandler);
+    document.removeEventListener('keydown', successDismissHandler);
+    successDismissHandler = null;
+
+    playLock();
+
+    // Brief delay for lock sound, then transition
+    setTimeout(() => {
+        ss.classList.remove('on');
+        if (numCorrect >= 20) { endGame(); } else { advance(); }
+    }, 120);
+}
+
+function showSuccess(s) {
+    const [c1, c2] = s.bg.split(',');
+    $("success-bg").style.background = `linear-gradient(135deg, ${c1} 0%, ${c2} 100%)`;
+    $("bg-glow").textContent = s.e;
+
+    const appNames = ["Safari","Mail","Mapy","Hudba","Hodiny","Fotky","Nastavení","Zprávy"];
+    const grid = $("app-grid");
+    grid.innerHTML = '';
+    s.apps.forEach((em, i) => {
+        const icon = document.createElement('div');
+        icon.className = 'app-icon';
+        icon.innerHTML = `<div class="app-bubble">${em}</div><div class="app-name">${appNames[i]||''}</div>`;
+        grid.appendChild(icon);
+    });
+
+    tick();
+    ss.classList.add('on');
+    playUnlock();
+
+    // Wait for user to tap or press any key
+    // Small delay so the unlock sound can finish before we register the handler
+    setTimeout(() => {
+        successDismissHandler = dismissSuccess;
+        ss.addEventListener('pointerdown', successDismissHandler, { once: true });
+        document.addEventListener('keydown', successDismissHandler, { once: true });
+    }, 350);
+}
+
+// ═══════════════════════════════════════
+// ADVANCE / END
+// ═══════════════════════════════════════
+function advance() {
+    curIdx++;
+    if (curIdx >= deck.length) { endGame(); } else { loadSentence(); }
+}
+
+function endGame() {
+    const pct = numTotal > 0 ? Math.round(numCorrect / numTotal * 100) : 0;
+    $("go-emoji").textContent = pct >= 80 ? '🏆' : pct >= 50 ? '📚' : '💪';
+    $("go-stats").innerHTML = `Správně: <span class="hl">${numCorrect}</span> z ${numTotal} vět`;
+
+    let cur = 0;
+    const timer = setInterval(() => {
+        cur = Math.min(cur + Math.max(1, Math.ceil((pct - cur) / 8)), pct);
+        $("pct-num").textContent = cur;
+        if (cur >= pct) clearInterval(timer);
+    }, 35);
+
+    ss.classList.remove('on');
+    go.classList.add('on');
+}
+
+// ═══════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════
+document.addEventListener('keydown', e => {
+    if (e.key >= '0' && e.key <= '9') press(parseInt(e.key));
+    if (e.key === 'Backspace') del();
+});
+
+// ═══════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════
+buildNumpad();
+tick();
+setInterval(tick, 15000);
+startGame();
+</script>
+</body>
+</html>
