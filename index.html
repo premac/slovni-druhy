@@ -1039,9 +1039,12 @@ document.addEventListener('keydown', e => {
 // ═══════════════════════════════════════
 // FULLSCREEN
 // ═══════════════════════════════════════
+const isMobileDevice = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    || (navigator.userAgentData?.mobile === true);
+
 let _fsTriggered = false;
 function ensureFullscreen() {
-    if (_fsTriggered || document.fullscreenElement || window.innerWidth <= 480) return;
+    if (!isMobileDevice || _fsTriggered || document.fullscreenElement) return;
     _fsTriggered = true;
     document.documentElement.requestFullscreen().catch(() => { _fsTriggered = false; });
 }
