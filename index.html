@@ -2,7 +2,13 @@
 <html lang="cs">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#000000">
+    <meta name="color-scheme" content="dark">
+    <link rel="manifest" href="manifest.json">
     <title>Slovní druhy</title>
     <style>
         * {
@@ -229,6 +235,68 @@
 
         /* Score corner removed — battery in status bar is used instead */
 
+        /* ── Fullscreen button (desktop only) ── */
+        #fs-btn {
+            position: fixed;
+            bottom: 18px;
+            right: 18px;
+            background: rgba(255,255,255,0.10);
+            border: 1px solid rgba(255,255,255,0.18);
+            color: rgba(255,255,255,0.45);
+            border-radius: 9px;
+            padding: 7px 11px;
+            font-size: 15px;
+            cursor: pointer;
+            z-index: 999;
+            transition: background 0.15s, color 0.15s;
+            line-height: 1;
+            font-family: inherit;
+        }
+        #fs-btn:hover { background: rgba(255,255,255,0.2); color: #fff; }
+
+        /* ── Mobile: no phone frame, fill screen ── */
+        @media (max-width: 480px) {
+            #fs-btn { display: none; }
+            #phone {
+                width: 100vw;
+                height: 100vh;
+                height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                max-width: none;
+                max-height: none;
+            }
+            .status-bar {
+                padding-top: max(14px, env(safe-area-inset-top));
+            }
+            #numpad-area {
+                padding-bottom: max(30px, env(safe-area-inset-bottom, 30px));
+            }
+        }
+
+        /* ── PWA standalone / fullscreen ── */
+        @media (display-mode: standalone), (display-mode: fullscreen) {
+            #fs-btn { display: none; }
+            body { background: #000; }
+            #phone {
+                width: 100vw;
+                height: 100vh;
+                height: 100dvh;
+                border-radius: 0;
+                border: none;
+                box-shadow: none;
+                max-width: none;
+                max-height: none;
+            }
+            .status-bar {
+                padding-top: max(14px, env(safe-area-inset-top));
+            }
+            #numpad-area {
+                padding-bottom: max(30px, env(safe-area-inset-bottom, 30px));
+            }
+        }
+
         /* Type colors */
         .c0 { color: #8E8E93; } .c1 { color: #5AC8FA; } .c2 { color: #4CD964; }
         .c3 { color: #AF52DE; } .c4 { color: #FF9500; } .c5 { color: #FF3B30; }
@@ -441,6 +509,9 @@
             <div id="s-swipe-bar"></div>
         </div>
     </div>
+
+    <!-- Fullscreen button (desktop) -->
+    <button id="fs-btn" title="Celá obrazovka" onclick="toggleFS()">⛶</button>
 
     <!-- ════ GAME OVER SCREEN ════ -->
     <div id="gameover-screen">
@@ -908,6 +979,28 @@ document.addEventListener('keydown', e => {
     if (e.key >= '0' && e.key <= '9') press(parseInt(e.key));
     if (e.key === 'Backspace') del();
 });
+
+// ═══════════════════════════════════════
+// FULLSCREEN
+// ═══════════════════════════════════════
+function toggleFS() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+}
+document.addEventListener('fullscreenchange', () => {
+    const btn = $('fs-btn');
+    if (btn) btn.style.display = document.fullscreenElement ? 'none' : '';
+});
+// Auto-request fullscreen on first interaction (desktop only)
+document.addEventListener('pointerdown', function autoFS() {
+    if (!document.fullscreenElement && window.innerWidth > 480) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    }
+    document.removeEventListener('pointerdown', autoFS);
+}, { once: true });
 
 // ═══════════════════════════════════════
 // BOOT
