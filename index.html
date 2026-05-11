@@ -697,6 +697,24 @@ function playLock() {
     });
 }
 
+function playKeyClick() {
+    const ctx = audioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1100, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(550, ctx.currentTime + 0.018);
+    gain.gain.setValueAtTime(0.10, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.022);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.025);
+}
+
+function haptic(ms) {
+    if (navigator.vibrate) navigator.vibrate(ms || 8);
+}
+
 // ═══════════════════════════════════════
 // DOM HELPERS
 // ═══════════════════════════════════════
@@ -811,7 +829,8 @@ function press(digit) {
     if (busy) return;
     const s = deck[curIdx];
     if (entered.length >= s.w.length) return;
-    if (navigator.vibrate) navigator.vibrate(10);
+    haptic(8);
+    playKeyClick();
 
     const pos = entered.length;
     entered.push(digit);
@@ -836,6 +855,8 @@ function press(digit) {
 
 function del() {
     if (busy || entered.length === 0) return;
+    haptic(6);
+    playKeyClick();
     const pos = entered.length - 1;
     entered.pop();
 
