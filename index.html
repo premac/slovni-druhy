@@ -445,16 +445,6 @@
         }
         #easter-egg.on { display: flex; animation: fadeIn 0.5s ease; }
 
-        #ee-title {
-            font-size: 56px;
-            font-weight: 200;
-            color: #fff;
-            letter-spacing: 10px;
-            text-transform: uppercase;
-            text-align: center;
-            text-shadow: 0 0 40px rgba(255,255,255,0.25);
-        }
-
         #ee-classroom {
             display: flex;
             flex-direction: column;
@@ -462,8 +452,8 @@
             gap: 0;
         }
         #ee-board {
-            width: 230px;
-            height: 96px;
+            width: 240px;
+            height: 116px;
             background: #1a5c2a;
             border: 6px solid #7a5530;
             border-radius: 4px;
@@ -473,10 +463,22 @@
             box-shadow: inset 0 0 24px rgba(0,0,0,0.45), 0 6px 18px rgba(0,0,0,0.6);
         }
         #ee-chalk {
-            font-size: 20px;
-            color: rgba(255,255,255,0.82);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
             font-family: 'Courier New', monospace;
+            color: rgba(255,255,255,0.85);
+        }
+        #ee-chalk-title {
+            font-size: 26px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+        #ee-chalk-sub {
+            font-size: 14px;
             letter-spacing: 2px;
+            color: rgba(255,255,255,0.65);
         }
         #ee-teacher {
             font-size: 58px;
@@ -600,21 +602,15 @@
 
     <!-- ════ EASTER EGG ════ -->
     <div id="easter-egg">
-        <div id="ee-title">Eduard</div>
         <div id="ee-classroom">
-            <div id="ee-board"><span id="ee-chalk">Dobrý den! ✏️</span></div>
-            <div id="ee-teacher">👩‍🏫</div>
-            <div id="ee-rows">
-                <div class="ee-row">
-                    <span style="animation-delay:.30s">👧</span><span style="animation-delay:.35s">👦</span><span style="animation-delay:.40s">👧</span><span style="animation-delay:.45s">👦</span><span style="animation-delay:.50s">👧</span>
-                </div>
-                <div class="ee-row">
-                    <span style="animation-delay:.55s">👦</span><span style="animation-delay:.60s">👧</span><span style="animation-delay:.65s">👦</span><span style="animation-delay:.70s">👧</span><span style="animation-delay:.75s">👦</span>
-                </div>
-                <div class="ee-row">
-                    <span style="animation-delay:.80s">👧</span><span style="animation-delay:.85s">👦</span><span style="animation-delay:.90s">👧</span><span style="animation-delay:.95s">👦</span><span style="animation-delay:1.0s">👧</span>
+            <div id="ee-board">
+                <div id="ee-chalk">
+                    <div id="ee-chalk-title">Eduard</div>
+                    <div id="ee-chalk-sub">3. třída</div>
                 </div>
             </div>
+            <div id="ee-teacher">👩‍🦰</div>
+            <div id="ee-rows"></div>
         </div>
         <div id="ee-footer">vytvořila Terezka s tátou</div>
     </div>
@@ -1147,6 +1143,35 @@ document.addEventListener('keydown', e => {
 // EASTER EGG
 // ═══════════════════════════════════════
 function showEasterEgg() {
+    // Hair pools: brown, black, light-brown, blonde
+    const hair = [
+        ['👧', '👦'],          // hnědé
+        ['👩‍🦱', '👨‍🦱'],  // černé (kudrnaté / tmavé)
+        ['🧒', '🧒‍♂️'],      // světle hnědé
+        ['👱‍♀️', '👱‍♂️'],  // blond
+    ];
+    // Ensure at least 3 kids from each group, fill rest randomly
+    const pick = pool => pool[Math.floor(Math.random() * pool.length)];
+    const kids = [];
+    hair.forEach(pool => { kids.push(pick(pool)); kids.push(pick(pool)); kids.push(pick(pool)); });
+    const all = hair.flat();
+    while (kids.length < 15) kids.push(pick(all));
+    kids.sort(() => Math.random() - 0.5);
+
+    const rows = $('ee-rows');
+    rows.innerHTML = '';
+    for (let r = 0; r < 3; r++) {
+        const row = document.createElement('div');
+        row.className = 'ee-row';
+        for (let c = 0; c < 5; c++) {
+            const span = document.createElement('span');
+            span.textContent = kids[r * 5 + c];
+            span.style.animationDelay = (0.25 + (r * 5 + c) * 0.055) + 's';
+            row.appendChild(span);
+        }
+        rows.appendChild(row);
+    }
+
     playUnlock();
     $('easter-egg').classList.add('on');
     $('easter-egg').addEventListener('pointerdown', hideEasterEgg, { once: true });
