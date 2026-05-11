@@ -938,7 +938,10 @@ function check() {
         updateBattery();
         setTimeout(() => showSuccess(s), 350);
     } else {
-        playSqueak(); haptic(40);
+        const wrongCount = entered.filter((v, i) => v !== s.t[i]).length;
+        for (let i = 0; i < wrongCount; i++) {
+            setTimeout(() => { playSqueak(); haptic(35); }, i * 280);
+        }
         // Show correct answer for up to 30s or until user taps
         const doAdvance = () => {
             clearWrongTimeout();
